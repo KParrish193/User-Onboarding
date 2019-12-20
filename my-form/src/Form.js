@@ -1,10 +1,17 @@
-import React from "react";
+import React, {useState, useEffect} from "react";
 import { withFormik, Form, Field } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
 
-function UserForm({ values, errors, touched }) {
+function UserForm({ values, errors, touched, status }) {
+    const [users, setUsers] = useState([]);
+
+    useEffect(() => {
+        console.log('status has changed!', status);
+        status && setUsers(users => [...users, status])}, [status]);
+    
     return (
+        <div className="container">
         <Form>
         <h1>New User</h1>
             <div>
@@ -38,8 +45,16 @@ function UserForm({ values, errors, touched }) {
             </div>
         <button type="submit">Submit!</button>
         </Form>
-    );
-}
+        {users.map(data => (
+        <ul key={data.id}>
+            <li>Name: {data.name}</li>
+            <li>Email: {data.email}</li>
+            <li>Password: {data.password}</li>
+            <li>TOS: {String(data.tos)}</li>
+        </ul>
+        ))}
+        </div>
+    )}
 
 const FormikUserForm = withFormik({
     mapPropsToValues({ name, email, password, tos }) {
@@ -53,6 +68,7 @@ const FormikUserForm = withFormik({
 
     validationSchema: Yup.object().shape({
     name: Yup.string()
+        .min(3)
         .required("Name is required "),
     email: Yup.string()
         .email("Email not valid")
@@ -62,12 +78,16 @@ const FormikUserForm = withFormik({
         .required("Password is required "),
     }),
 
-    handleSubmit(values, {resetForm, setSubmitting}) {
+    handleSubmit(values, {resetForm, setSubmitting, setErrors, setStatus}) {
     console.log(values);
+    if (values.email === "waffle@syrup.com") {
+        setErrors({ email: "That email is already taken" });
+    }else{
     axios
-    .post("https://reqres.in/api/users", values)
+    .post("https://reqres.in/api/users/", values)
     .then(res => {
-        console.log(res);
+        console.log('success',res)
+        setStatus(res.data);
         resetForm();
         setSubmitting(false);
     })
@@ -76,7 +96,7 @@ const FormikUserForm = withFormik({
         setSubmitting(false);
     });
     }
-    
+    }
 })(UserForm);
 
 export default FormikUserForm;
